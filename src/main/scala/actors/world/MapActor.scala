@@ -1,6 +1,6 @@
 package actors.world
 
-import actors.world.MapActor.{MoveGladiatorMessage, AddGladiatorMessage}
+import actors.world.MapActor.{GetGladiatorCoordinates, MoveGladiatorMessage, AddGladiatorMessage}
 import akka.actor.{Actor, ActorRef, Props}
 import battle.GameBoard
 
@@ -9,6 +9,7 @@ class MapActor extends Actor {
   val board = GameBoard(10,10)
 
   override def receive: Receive = {
+    case get : GetGladiatorCoordinates => sender ! board.find(get.gladiatorActor)
     case add : AddGladiatorMessage => handleAddGladiator(add)
     case move: MoveGladiatorMessage => handleMoveGladiator(move)
   }
@@ -32,5 +33,6 @@ object MapActor {
 
   case class AddGladiatorMessage(val gladiatorActor : ActorRef)
   case class MoveGladiatorMessage(val gladiatorActor : ActorRef, val x : Int, val y : Int)
+  case class GetGladiatorCoordinates(val gladiatorActor : ActorRef)
 
 }

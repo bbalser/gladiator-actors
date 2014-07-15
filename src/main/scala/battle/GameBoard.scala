@@ -21,7 +21,7 @@ class GameBoard(val width: Int, val height: Int) {
     grid(x)(y) = obj
   }
 
-  private def find(obj: AnyRef) : Coordinate = {
+  def find(obj: AnyRef) : Coordinate = {
     val col = for {
       xCoord <- 0 until width
       yCoord <- 0 until height

@@ -1,11 +1,15 @@
 package actors.world
 
 import actors.characters.GladiatorActor
-import actors.world.MapActor.{MoveGladiatorMessage, AddGladiatorMessage}
+import actors.world.MapActor.{GetGladiatorCoordinates, MoveGladiatorMessage, AddGladiatorMessage}
 import akka.actor.{Props, ActorSystem}
+import akka.pattern.ask
 import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
-import battle.Gladiator
+import akka.util.Timeout
+import battle.GameBoard.Coordinate
+import battle.{GameBoard, Gladiator}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MapActorSpec(_system : ActorSystem)
@@ -16,6 +20,8 @@ class MapActorSpec(_system : ActorSystem)
   with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("GladiatorActorSpec"))
+
+  implicit val timeout = Timeout(5.seconds)
 
   override def afterAll : Unit = {
     system.shutdown()
@@ -55,8 +61,16 @@ class MapActorSpec(_system : ActorSystem)
 
     map.underlyingActor.asInstanceOf[MapActor].board.get(4, 4) should be (Some(gladiator))
     map.underlyingActor.asInstanceOf[MapActor].board.get(2, 3) should be (None)
+  }
 
+  it should "return current coordinates when asked" in {
+    val gladiator = TestActorRef(GladiatorActor.props(Gladiator()))
+    val map = TestActorRef(MapActor.props)
 
+    map ! AddGladiatorMessage(gladiator)
+    val future = map ? GetGladiatorCoordinates(gladiator)
+    val coordinate = Await.result(future, 5.seconds).asInstanceOf[Coordinate]
+    coordinate should be (Coordinate(2, 3))
   }
 
 
