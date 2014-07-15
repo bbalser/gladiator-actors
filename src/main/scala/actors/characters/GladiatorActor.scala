@@ -1,6 +1,6 @@
 package actors.characters
 
-import akka.actor.Actor
+import akka.actor.{Props, Actor}
 import akka.actor.Actor.Receive
 import battle.Gladiator
 import messages.attacks.AttackMessage
@@ -18,4 +18,8 @@ class GladiatorActor(val gladiator : Gladiator) extends Actor {
     }
   }
 
+}
+
+object GladiatorActor {
+  def props(gladiator : Gladiator) = Props(classOf[GladiatorActor], gladiator)
 }
