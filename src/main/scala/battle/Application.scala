@@ -2,15 +2,16 @@ package battle
 
 import actors.characters.GladiatorActor
 import actors.world.MapActor
-import actors.world.MapActor.{MoveGladiatorMessage, GetGladiatorCoordinates, AddGladiatorMessage}
-import akka.actor.{ActorRef, ActorSystem}
+import actors.world.MapActor.{AddGladiatorMessage, GetGladiatorCoordinates, MoveGladiatorMessage}
+import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import battle.GameBoard.Coordinate
+import util.FutureHelper._
 
-import scala.concurrent.Await
-import scala.io.StdIn
 import scala.concurrent.duration._
+import scala.io.StdIn
+
 
 object Application extends App {
 
@@ -37,7 +38,7 @@ object Application extends App {
     line match {
       case FindRegex(x) => {
         val future = map ? GetGladiatorCoordinates(gladiators(x.toInt))
-        val coord = Await.result(future, 5.seconds).asInstanceOf[Coordinate]
+        val coord = future.waitOnResult[Coordinate]()
         println(s"${coord.x}, ${coord.y}")
       }
       case MoveRegex(pos, x, y) => {
