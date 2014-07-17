@@ -1,8 +1,8 @@
 package battle
 
 import actors.characters.GladiatorActor
-import actors.world.MapActor
-import actors.world.MapActor.{AddGladiatorMessage, GetGladiatorCoordinates, MoveGladiatorMessage}
+import actors.world.{WorldActor, MapActor}
+import actors.world.MapActor.{MapChangedMessage, AddGladiatorMessage, GetGladiatorCoordinates, MoveGladiatorMessage}
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
@@ -15,10 +15,38 @@ import scala.io.StdIn
 
 object Application extends App {
 
+  def mapChanged(event: MapChangedMessage): Unit = {
+    drawBoard(event.board)
+  }
+
+  def drawBoard(board: GameBoard) : Unit = {
+
+    val separator = " -" * board.width + " "
+
+    var lists: List[List[String]] = List()
+    (0 until board.height).foreach {y =>
+      var internalList = List[String]()
+      (0 until board.width).foreach { x =>
+        internalList = internalList :+ (board.get(x, y) match {
+          case Some(x) => "X"
+          case None => " "
+        })
+      }
+      lists = lists :+ internalList
+    }
+
+    println(separator)
+    lists.foreach { list =>
+      println("|" + list.mkString("|") + "|")
+      println(separator)
+    }
+  }
+
   implicit val timeout = Timeout(5.seconds)
 
   val system = ActorSystem("mySystem")
-  val map = system.actorOf(MapActor.props)
+  val world = system.actorOf(WorldActor.props(mapChanged))
+  val map = system.actorOf(MapActor.props(world))
 
   val gladiators = List(system.actorOf(GladiatorActor.props(Gladiator())), system.actorOf(GladiatorActor.props(Gladiator())))
 
@@ -48,6 +76,7 @@ object Application extends App {
       case x => println(s"Unknown Command : ${x}")
     }
 
+    Thread.sleep(1000)
   }
 
   system.shutdown()
