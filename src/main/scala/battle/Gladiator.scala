@@ -1,6 +1,6 @@
 package battle
 
-class Gladiator {
+class Gladiator(val name: String) {
 
   private var _hitpoints = 5
   val armorClass = 10
@@ -20,5 +20,5 @@ class Gladiator {
 }
 
 object Gladiator {
-  def apply() = new Gladiator()
+  def apply(name: String) = new Gladiator(name)
 }

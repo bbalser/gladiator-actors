@@ -48,7 +48,7 @@ object Application extends App {
   val world = system.actorOf(WorldActor.props(mapChanged))
   val map = system.actorOf(MapActor.props(world))
 
-  val gladiators = List(system.actorOf(GladiatorActor.props(Gladiator())), system.actorOf(GladiatorActor.props(Gladiator())))
+  val gladiators = List(system.actorOf(GladiatorActor.props(Gladiator("John"))), system.actorOf(GladiatorActor.props(Gladiator("Mary"))))
 
 
   map ! AddGladiatorMessage(gladiators(0))

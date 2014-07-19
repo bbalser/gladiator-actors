@@ -1,14 +1,15 @@
 package actors.world
 
 import actors.characters.GladiatorActor
-import actors.world.MapActor.{MapChangedMessage, GetGladiatorCoordinates, MoveGladiatorMessage, AddGladiatorMessage}
-import akka.actor.{Props, ActorSystem}
+import actors.world.MapActor.{AddGladiatorMessage, GetGladiatorCoordinates, MapChangedMessage, MoveGladiatorMessage}
+import akka.actor.ActorSystem
 import akka.pattern.ask
-import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import battle.GameBoard.Coordinate
-import battle.{GameBoard, Gladiator}
+import battle.Gladiator
 import org.scalatest._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -31,7 +32,7 @@ class MapActorSpec(_system : ActorSystem)
     worldProbe = new TestProbe(system)
   }
 
-  override def afterAll : Unit = {
+  override def afterAll() : Unit = {
     system.shutdown()
     system.awaitTermination(10.seconds)
   }
@@ -43,15 +44,15 @@ class MapActorSpec(_system : ActorSystem)
   }
 
   it should "add gladiator actor to start position 1 when Add Gladiator Message is received" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator()))
+    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
     val map = TestActorRef(MapActor.props(worldProbe.ref))
     map ! AddGladiatorMessage(gladiator)
     map.underlyingActor.asInstanceOf[MapActor].board.get(2,3).get should be (gladiator)
   }
 
   it should "add second gladiator actor to start position 2 when Add Gladiator message is received for 2nd Gladiator" in {
-    val gladiator1 = TestActorRef(GladiatorActor.props(Gladiator()))
-    val gladiator2 = TestActorRef(GladiatorActor.props(Gladiator()))
+    val gladiator1 = TestActorRef(GladiatorActor.props(Gladiator("John")))
+    val gladiator2 = TestActorRef(GladiatorActor.props(Gladiator("John")))
     val map = TestActorRef(MapActor.props(worldProbe.ref))
     map ! AddGladiatorMessage(gladiator1)
     map ! AddGladiatorMessage(gladiator2)
@@ -61,7 +62,7 @@ class MapActorSpec(_system : ActorSystem)
   }
 
   it should "move gladiator to new position" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator()))
+    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
     val map = TestActorRef(MapActor.props(worldProbe.ref))
     map ! AddGladiatorMessage(gladiator)
 
@@ -72,7 +73,7 @@ class MapActorSpec(_system : ActorSystem)
   }
 
   it should "return current coordinates when asked" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator()))
+    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
     val map = TestActorRef(MapActor.props(worldProbe.ref))
 
     map ! AddGladiatorMessage(gladiator)
@@ -82,7 +83,7 @@ class MapActorSpec(_system : ActorSystem)
   }
 
   it should "Send MapUpdateMessage to World Actor when gladiator added to map" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator()))
+    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
     val map = TestActorRef(MapActor.props(worldProbe.ref))
 
     map ! AddGladiatorMessage(gladiator)
@@ -92,7 +93,7 @@ class MapActorSpec(_system : ActorSystem)
   }
 
   it should "Send MapUpdateMessage to World Actor when gladiator moves on map" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator()))
+    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
     val map = TestActorRef(MapActor.props(worldProbe.ref))
 
     map ! AddGladiatorMessage(gladiator)

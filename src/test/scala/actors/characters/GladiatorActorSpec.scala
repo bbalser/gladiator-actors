@@ -16,20 +16,20 @@ class GladiatorActorSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem("GladiatorActorSpec"))
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     system.shutdown()
     system.awaitTermination(10.seconds)
   }
 
   "A Gladiator Actor" should "wrap a Gladiator" in {
-    val gladiator = Gladiator()
+    val gladiator = Gladiator("John")
     val actorRef = TestActorRef(Props(classOf[GladiatorActor], gladiator))
     actorRef.underlyingActor.asInstanceOf[GladiatorActor].gladiator should be (gladiator)
   }
 
   it should "apply damage to wrapped gladiator when successful attack received" in {
-    val defenderRef = TestActorRef(Props(classOf[GladiatorActor], Gladiator()))
-    defenderRef ! AttackMessage(Gladiator(), 10)
+    val defenderRef = TestActorRef(Props(classOf[GladiatorActor], Gladiator("John")))
+    defenderRef ! AttackMessage(Gladiator("John"), 10)
 
     defenderRef.underlyingActor.asInstanceOf[GladiatorActor].gladiator.hitpoints should be (4)
   }
