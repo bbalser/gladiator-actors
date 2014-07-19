@@ -2,6 +2,7 @@ package util
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 class FutureHelper[T](future : Future[T]) {
 
