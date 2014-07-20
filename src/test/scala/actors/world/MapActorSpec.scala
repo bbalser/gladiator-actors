@@ -1,8 +1,8 @@
 package actors.world
 
 import actors.characters.GladiatorActor
-import actors.world.MapActor.{AddGladiatorMessage, GetGladiatorCoordinates, MapChangedMessage, MoveGladiatorMessage}
-import akka.actor.ActorSystem
+import actors.world.MapActor._
+import akka.actor.{Actor, ActorSystem}
 import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
@@ -12,6 +12,7 @@ import org.scalatest._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import util.FutureHelper._
 
 class MapActorSpec(_system : ActorSystem)
   extends TestKit(_system)
@@ -27,7 +28,6 @@ class MapActorSpec(_system : ActorSystem)
 
   var worldProbe: TestProbe = null
 
-
   override protected def beforeEach(): Unit = {
     worldProbe = new TestProbe(system)
   }
@@ -37,69 +37,64 @@ class MapActorSpec(_system : ActorSystem)
     system.awaitTermination(10.seconds)
   }
 
+  implicit def convertTestActorRefToMapActorHelper(map: TestActorRef[Nothing]) = map.underlyingActor.asInstanceOf[MapActor]
+
   "A Map Actor" should "contain a 10x10 grid of coordinates" in {
-    val actorRef = TestActorRef(MapActor.props(worldProbe.ref))
-    actorRef.underlyingActor.asInstanceOf[MapActor].board.width should be (10)
-    actorRef.underlyingActor.asInstanceOf[MapActor].board.height should be (10)
+    val map = createMap()
+    map.board.width should be (10)
+    map.board.height should be (10)
   }
 
   it should "add gladiator actor to start position 1 when Add Gladiator Message is received" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val map = TestActorRef(MapActor.props(worldProbe.ref))
-    map ! AddGladiatorMessage(gladiator)
-    map.underlyingActor.asInstanceOf[MapActor].board.get(2,3).get should be (gladiator)
-  }
-
-  it should "add second gladiator actor to start position 2 when Add Gladiator message is received for 2nd Gladiator" in {
-    val gladiator1 = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val gladiator2 = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val map = TestActorRef(MapActor.props(worldProbe.ref))
-    map ! AddGladiatorMessage(gladiator1)
-    map ! AddGladiatorMessage(gladiator2)
-
-    map.underlyingActor.asInstanceOf[MapActor].board.get(2, 3).get should be (gladiator1)
+    val map = createMap()
+    val gladiator1 = map.underlyingActor.asInstanceOf[MapActor].gladiatorActor1
+    val gladiator2 = map.underlyingActor.asInstanceOf[MapActor].gladiatorActor2
+    map.underlyingActor.asInstanceOf[MapActor].board.get(2,3).get should be (gladiator1)
     map.underlyingActor.asInstanceOf[MapActor].board.get(8, 7).get should be (gladiator2)
-  }
-
-  it should "move gladiator to new position" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val map = TestActorRef(MapActor.props(worldProbe.ref))
-    map ! AddGladiatorMessage(gladiator)
-
-    map ! MoveGladiatorMessage(gladiator, 4, 4)
-
-    map.underlyingActor.asInstanceOf[MapActor].board.get(4, 4) should be (Some(gladiator))
-    map.underlyingActor.asInstanceOf[MapActor].board.get(2, 3) should be (None)
+    assertMapChangeEvent(1, map)
   }
 
   it should "return current coordinates when asked" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val map = TestActorRef(MapActor.props(worldProbe.ref))
+    val map = createMap()
+    val gladiator = map.underlyingActor.asInstanceOf[MapActor].gladiatorActor1
 
-    map ! AddGladiatorMessage(gladiator)
     val future = map ? GetGladiatorCoordinates(gladiator)
-    val coordinate = Await.result(future, 5.seconds).asInstanceOf[Coordinate]
-    coordinate should be (Coordinate(2, 3))
+    future.waitOnResult[Coordinate]() should be (Coordinate(2, 3))
   }
 
-  it should "Send MapUpdateMessage to World Actor when gladiator added to map" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val map = TestActorRef(MapActor.props(worldProbe.ref))
+  it should "move gladiator to 1 more on y axis when given the down direction" in {
+    val map = createMap()
 
-    map ! AddGladiatorMessage(gladiator)
+    map ! MoveDownMessage(map.gladiatorActor1)
 
-    val message = worldProbe.receiveOne(5.seconds)
-    message.asInstanceOf[MapChangedMessage].board should be (map.underlyingActor.asInstanceOf[MapActor].board)
+    map.board.find(map.gladiatorActor1) should be (Coordinate(2, 4))
+    assertMapChangeEvent(2, map)
   }
 
-  it should "Send MapUpdateMessage to World Actor when gladiator moves on map" in {
-    val gladiator = TestActorRef(GladiatorActor.props(Gladiator("John")))
-    val map = TestActorRef(MapActor.props(worldProbe.ref))
+  it should "move gladiator to 1 less on x axis when given the left direction" in {
+    val map = createMap()
 
-    map ! AddGladiatorMessage(gladiator)
-    map ! MoveGladiatorMessage(gladiator, 5, 5)
+    map ! MoveLeftMessage(map.gladiatorActor1)
 
-    val messages = worldProbe.receiveN(2, 5.seconds)
+    map.board.find(map.gladiatorActor1) should be (Coordinate(1, 3))
+    assertMapChangeEvent(2, map)
+  }
+
+  it should "move gladiator to 1 more on x axis when given the right direction" in {
+    val map = createMap()
+
+    map ! MoveRightMessage(map.gladiatorActor1)
+
+    map.board.find(map.gladiatorActor1) should be (Coordinate(3, 3))
+    assertMapChangeEvent(2, map)
+  }
+
+  private def createMap() : TestActorRef[Nothing] = TestActorRef(MapActor.props(worldProbe.ref, createGladiator(), createGladiator()))
+
+  private def createGladiator(): TestActorRef[Nothing] = TestActorRef(GladiatorActor.props(Gladiator("John")))
+
+  private def assertMapChangeEvent[T <: Actor](num: Int, map: TestActorRef[T]): Unit = {
+    val messages = worldProbe.receiveN(num, 5.seconds)
     messages.forall(x => x.asInstanceOf[MapChangedMessage].board == map.underlyingActor.asInstanceOf[MapActor].board) should be (true)
   }
 

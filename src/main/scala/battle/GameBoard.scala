@@ -15,6 +15,10 @@ class GameBoard(val width: Int, val height: Int) {
     else Some(grid(x)(y))
   }
 
+  def move(obj: AnyRef, coordinate: Coordinate): Unit = {
+    move(obj, coordinate.x, coordinate.y)
+  }
+
   def move(obj: AnyRef, x: Int, y: Int): Unit = {
     val coordinate = find(obj)
     grid(coordinate.x)(coordinate.y) = null
@@ -25,7 +29,7 @@ class GameBoard(val width: Int, val height: Int) {
     val col = for {
       xCoord <- 0 until width
       yCoord <- 0 until height
-      if (grid(xCoord)(yCoord) == obj)
+      if grid(xCoord)(yCoord) == obj
     } yield Coordinate(xCoord, yCoord)
     col(0)
   }
@@ -35,6 +39,6 @@ class GameBoard(val width: Int, val height: Int) {
 object GameBoard {
   def apply(width: Int, height: Int) = new GameBoard(width, height)
 
-  case class Coordinate(val x: Int, val y: Int)
+  case class Coordinate(x: Int, y: Int)
 
 }
