@@ -2,6 +2,7 @@ package actors.characters
 
 import akka.actor.{Props, ActorSystem}
 import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
+import battle.GameBoard.Coordinate
 import battle.Gladiator
 import messages.attacks.AttackMessage
 import org.scalatest.{FlatSpecLike, Matchers, BeforeAndAfterAll}
@@ -29,7 +30,7 @@ class GladiatorActorSpec(_system: ActorSystem)
 
   it should "apply damage to wrapped gladiator when successful attack received" in {
     val defenderRef = TestActorRef(Props(classOf[GladiatorActor], Gladiator("John")))
-    defenderRef ! AttackMessage(Gladiator("John"), 10)
+    defenderRef ! AttackMessage(Gladiator("John"), Coordinate(1,1), 10)
 
     defenderRef.underlyingActor.asInstanceOf[GladiatorActor].gladiator.hitpoints should be (4)
   }
