@@ -19,6 +19,8 @@ object Application extends App {
     drawBoard(event.board)
   }
 
+  def createGladiator(name: String) = name -> system.actorOf(GladiatorActor.props(Gladiator(name)))
+
   def drawBoard(board: GameBoard) : Unit = {
 
     val separator = " -" * board.width + " "
@@ -28,7 +30,7 @@ object Application extends App {
       var internalList = List[String]()
       (0 until board.width).foreach { x =>
         internalList = internalList :+ (board.get(x, y) match {
-          case Some(x) => "X"
+          case Some(ref) => gladiators.find { case (k, v) => v == ref}.getOrElse(("X", null))._1.substring(0,1)
           case None => " "
         })
       }
@@ -46,17 +48,17 @@ object Application extends App {
 
   val system = ActorSystem("mySystem")
   val world = system.actorOf(WorldActor.props(mapChanged))
-  val gladiators = List(system.actorOf(GladiatorActor.props(Gladiator("John"))), system.actorOf(GladiatorActor.props(Gladiator("Mary"))))
-  val map = system.actorOf(MapActor.props(world, gladiators(0), gladiators(1)))
+
+  val gladiators = Map(createGladiator("John"), createGladiator("Mary"))
+  val map = system.actorOf(MapActor.props(world, gladiators("John"), gladiators("Mary")))
 
   var exit = false
 
-  val FindRegex = "find (\\d)".r
-  val MoveRegex = "move (\\d) (\\d),(\\d)".r
-  val UpRegex = "(\\d) up".r
-  val DownRegex = "(\\d) down".r
-  val LeftRegex = "(\\d) left".r
-  val RightRegex = "(\\d) right".r
+  val FindRegex = "find (\\w+)".r
+  val UpRegex = "up (\\w+)".r
+  val DownRegex = "down (\\w+)".r
+  val LeftRegex = "left (\\w+)".r
+  val RightRegex = "right (\\w+)".r
 
   Thread.sleep(500)
 
@@ -64,16 +66,15 @@ object Application extends App {
     val line = StdIn.readLine("Command : ")
 
     line match {
-      case FindRegex(x) => {
-        val future = map ? GetGladiatorCoordinates(gladiators(x.toInt))
+      case FindRegex(name) => {
+        val future = map ? GetGladiatorCoordinates(gladiators(name))
         val coord = future.waitOnResult[Coordinate]()
         println(s"${coord.x}, ${coord.y}")
       }
-      case MoveRegex(pos, x, y) => map ! MoveGladiatorMessage(gladiators(pos.toInt), x.toInt, y.toInt)
-      case UpRegex(pos) => map ! MoveUpMessage(gladiators(pos.toInt))
-      case DownRegex(pos) => map ! MoveDownMessage(gladiators(pos.toInt))
-      case LeftRegex(pos) => map ! MoveLeftMessage(gladiators(pos.toInt))
-      case RightRegex(pos) => map ! MoveRightMessage(gladiators(pos.toInt))
+      case UpRegex(name) => map ! MoveUpMessage(gladiators(name))
+      case DownRegex(name) => map ! MoveDownMessage(gladiators(name))
+      case LeftRegex(name) => map ! MoveLeftMessage(gladiators(name))
+      case RightRegex(name) => map ! MoveRightMessage(gladiators(name))
       case "exit" => exit = true
       case x => println(s"Unknown Command : ${x}")
     }

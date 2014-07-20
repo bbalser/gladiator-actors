@@ -22,20 +22,19 @@ class GladiatorActorSpec(_system: ActorSystem)
     system.awaitTermination(10.seconds)
   }
 
+  implicit def convertTestActorRefToGladiatorActor(actor: TestActorRef[Nothing]) = actor.underlyingActor.asInstanceOf[GladiatorActor]
+
   "A Gladiator Actor" should "wrap a Gladiator" in {
     val gladiator = Gladiator("John")
     val actorRef = TestActorRef(Props(classOf[GladiatorActor], gladiator))
-    actorRef.underlyingActor.asInstanceOf[GladiatorActor].gladiator should be (gladiator)
+    actorRef.gladiator should be (gladiator)
   }
 
   it should "apply damage to wrapped gladiator when successful attack received" in {
     val defenderRef = TestActorRef(Props(classOf[GladiatorActor], Gladiator("John")))
     defenderRef ! AttackMessage(Gladiator("John"), Coordinate(1,1), 10)
 
-    defenderRef.underlyingActor.asInstanceOf[GladiatorActor].gladiator.hitpoints should be (4)
+    defenderRef.gladiator.hitpoints should be (4)
   }
-
-
-
 
 }
