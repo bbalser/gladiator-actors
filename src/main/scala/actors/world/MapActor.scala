@@ -1,7 +1,7 @@
 package actors.world
 
 import actors.world.MapActor._
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, Props}
 import battle.GameBoard
 import battle.GameBoard.Coordinate
 

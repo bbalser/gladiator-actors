@@ -65,19 +65,24 @@ class WorldActorSpec(_system: ActorSystem)
   }
 
   it should "Send Gladiator Move event to MapActor" in {
-    val world = TestActorRef(WorldActor.props(changeEvent))
+
+    val promise = Promise[MapChangedMessage]
+    def captureBoard(event : MapChangedMessage): Unit = {
+      if (!promise.isCompleted) promise.success(event)
+    }
+
+    val world = TestActorRef(WorldActor.props(captureBoard))
     val gladiator = Gladiator("John")
 
     world ! AddGladiatorMessage(gladiator)
     world ! new StartMessage
 
-    val future = world.map ? GetCoordinate(world.gladiators(gladiator))
-    val coordinate = future.waitOnResult[Coordinate]()
+    val board = promise.future.waitOnResult[MapChangedMessage]().board
+    board.move(gladiator, Coordinate(5,5))
 
     world ! MoveGladiatorMessage(gladiator, Up)
 
-    val future2 = world.map ? GetCoordinate(world.gladiators(gladiator))
-    future2.waitOnResult[Coordinate]() should be (Coordinate(coordinate.x, coordinate.y-1))
+    awaitAssert({ board.find(gladiator) should be (Coordinate(5, 4)) }, 5.seconds)
   }
 
 
