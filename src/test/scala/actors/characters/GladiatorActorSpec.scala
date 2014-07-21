@@ -1,12 +1,14 @@
 package actors.characters
 
-import akka.actor.{Props, ActorSystem}
-import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import battle.GameBoard.Coordinate
 import battle.Gladiator
 import messages.attacks.AttackMessage
-import org.scalatest.{FlatSpecLike, Matchers, BeforeAndAfterAll}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 class GladiatorActorSpec(_system: ActorSystem)
   extends TestKit(_system)

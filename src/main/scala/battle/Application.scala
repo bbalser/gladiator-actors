@@ -1,6 +1,7 @@
 package battle
 
 import actors.characters.GladiatorActor
+import actors.world.WorldActor.{MoveGladiatorMessage, StartMessage, AddGladiatorMessage}
 import actors.world.{WorldActor, MapActor}
 import actors.world.MapActor._
 import akka.actor.ActorSystem
@@ -19,8 +20,6 @@ object Application extends App {
     drawBoard(event.board)
   }
 
-  def createGladiator(name: String) = name -> system.actorOf(GladiatorActor.props(Gladiator(name)))
-
   def drawBoard(board: GameBoard) : Unit = {
 
     val separator = " -" * board.width + " "
@@ -29,7 +28,7 @@ object Application extends App {
     (0 until board.height).foreach {y =>
       var internalList = List[String]()
       (0 until board.width).foreach { x =>
-        internalList = internalList :+ (board.get(x, y) match {
+        internalList = internalList :+ (board.get(Coordinate(x, y)) match {
           case Some(ref) => gladiators.find { case (k, v) => v == ref}.getOrElse(("X", null))._1.substring(0,1)
           case None => " "
         })
@@ -44,17 +43,26 @@ object Application extends App {
     }
   }
 
+  def move(name: String, direction: Direction): Unit = {
+    if (gladiators.contains(name)) {
+      world ! MoveGladiatorMessage(gladiators(name), direction)
+    } else {
+      println(s"Unknown Character : ${name}")
+    }
+  }
+
   implicit val timeout = Timeout(5.seconds)
 
   val system = ActorSystem("mySystem")
   val world = system.actorOf(WorldActor.props(mapChanged))
 
-  val gladiators = Map(createGladiator("John"), createGladiator("Mary"))
-  val map = system.actorOf(MapActor.props(world, gladiators("John"), gladiators("Mary")))
+  val gladiators = Map("John" -> Gladiator("John"), "Mary" -> Gladiator("Mary"))
+  world ! AddGladiatorMessage(gladiators("John"))
+  world ! AddGladiatorMessage(gladiators("Mary"))
+  world ! new StartMessage
 
   var exit = false
 
-  val FindRegex = "find (\\w+)".r
   val UpRegex = "up (\\w+)".r
   val DownRegex = "down (\\w+)".r
   val LeftRegex = "left (\\w+)".r
@@ -66,15 +74,10 @@ object Application extends App {
     val line = StdIn.readLine("Command : ")
 
     line match {
-      case FindRegex(name) => {
-        val future = map ? GetGladiatorCoordinates(gladiators(name))
-        val coord = future.waitOnResult[Coordinate]()
-        println(s"${coord.x}, ${coord.y}")
-      }
-      case UpRegex(name) => map ! MoveUpMessage(gladiators(name))
-      case DownRegex(name) => map ! MoveDownMessage(gladiators(name))
-      case LeftRegex(name) => map ! MoveLeftMessage(gladiators(name))
-      case RightRegex(name) => map ! MoveRightMessage(gladiators(name))
+      case UpRegex(name) => move(name, Up)
+      case DownRegex(name) => move(name, Down)
+      case LeftRegex(name) => move(name, Left)
+      case RightRegex(name) => move(name, Right)
       case "exit" => exit = true
       case x => println(s"Unknown Command : ${x}")
     }

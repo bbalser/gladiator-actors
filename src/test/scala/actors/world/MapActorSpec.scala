@@ -9,12 +9,12 @@ import akka.util.Timeout
 import battle.GameBoard.Coordinate
 import battle.Gladiator
 import org.scalatest._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import util.FutureHelper._
 
-class MapActorSpec(_system : ActorSystem)
+import scala.concurrent.duration._
+import scala.language.implicitConversions
+
+class MapActorSpec(_system: ActorSystem)
   extends TestKit(_system)
   with ImplicitSender
   with Matchers
@@ -22,17 +22,17 @@ class MapActorSpec(_system : ActorSystem)
   with BeforeAndAfterAll
   with BeforeAndAfterEach {
 
-  def this() = this(ActorSystem("GladiatorActorSpec"))
+  def this() = this(ActorSystem("MapActorSpec"))
 
   implicit val timeout = Timeout(5.seconds)
 
-  var worldProbe: TestProbe = null
+  var parent: TestProbe = null
 
   override protected def beforeEach(): Unit = {
-    worldProbe = new TestProbe(system)
+    parent = new TestProbe(system)
   }
 
-  override def afterAll() : Unit = {
+  override def afterAll(): Unit = {
     system.shutdown()
     system.awaitTermination(10.seconds)
   }
@@ -40,62 +40,91 @@ class MapActorSpec(_system : ActorSystem)
   implicit def convertTestActorRefToMapActorHelper(map: TestActorRef[Nothing]) = map.underlyingActor.asInstanceOf[MapActor]
 
   "A Map Actor" should "contain a 10x10 grid of coordinates" in {
-    val map = createMap()
-    map.board.width should be (10)
-    map.board.height should be (10)
+    val map = TestActorRef(MapActor.props(Nil), parent.ref, "Child Actor")
+    map.board.width should be(10)
+    map.board.height should be(10)
   }
 
-  it should "add gladiator actor to start position 1 when Add Gladiator Message is received" in {
-    val map = createMap()
-    val gladiator1 = map.underlyingActor.asInstanceOf[MapActor].gladiatorActor1
-    val gladiator2 = map.underlyingActor.asInstanceOf[MapActor].gladiatorActor2
-    map.underlyingActor.asInstanceOf[MapActor].board.get(2,3).get should be (gladiator1)
-    map.underlyingActor.asInstanceOf[MapActor].board.get(8, 7).get should be (gladiator2)
+  it should "add gladiator to random spots on board" in {
+    val gladiators = createGladiators
+    val map = createMap(gladiators)
+
+    map.board.find(gladiators(0)) should not be (null)
+    map.board.find(gladiators(1)) should not be (null)
+
     assertMapChangeEvent(1, map)
   }
 
   it should "return current coordinates when asked" in {
-    val map = createMap()
-    val gladiator = map.underlyingActor.asInstanceOf[MapActor].gladiatorActor1
+    val map = createMap(createGladiators)
+    val gladiator = map.entities.head
 
-    val future = map ? GetGladiatorCoordinates(gladiator)
-    future.waitOnResult[Coordinate]() should be (Coordinate(2, 3))
+    val future = map ? GetCoordinate(gladiator)
+    future.waitOnResult[Coordinate]() should not be (null)
   }
 
   it should "move gladiator to 1 more on y axis when given the down direction" in {
-    val map = createMap()
+    val map = createMap(createGladiators)
+    val gladiator = map.entities.head
 
-    map ! MoveDownMessage(map.gladiatorActor1)
+    map.board.move(gladiator, Coordinate(5, 5))
 
-    map.board.find(map.gladiatorActor1) should be (Coordinate(2, 4))
+    map ! MoveMessage(gladiator, Down)
+    val future = map ? GetCoordinate(gladiator)
+
+    future.waitOnResult[Coordinate]() should be(Coordinate(5, 6))
+    assertMapChangeEvent(2, map)
+  }
+
+  it should "move gladiator to 1 less on y axis when given the up direction" in {
+    val map = createMap(createGladiators)
+    val gladiator = map.entities.head
+
+    map.board.move(gladiator, Coordinate(5, 5))
+
+    map ! MoveMessage(gladiator, Up)
+    val future = map ? GetCoordinate(gladiator)
+
+    future.waitOnResult[Coordinate]() should be(Coordinate(5, 4))
     assertMapChangeEvent(2, map)
   }
 
   it should "move gladiator to 1 less on x axis when given the left direction" in {
-    val map = createMap()
+    val map = createMap(createGladiators)
+    val gladiator = map.entities.head
+    map.board.move(gladiator, Coordinate(5, 5))
 
-    map ! MoveLeftMessage(map.gladiatorActor1)
+    map ! MoveMessage(gladiator, Left)
+    val future = map ? GetCoordinate(gladiator)
 
-    map.board.find(map.gladiatorActor1) should be (Coordinate(1, 3))
+    future.waitOnResult[Coordinate]() should be(Coordinate(4, 5))
     assertMapChangeEvent(2, map)
   }
 
   it should "move gladiator to 1 more on x axis when given the right direction" in {
-    val map = createMap()
+    val map = createMap(createGladiators)
+    val gladiator = map.entities.head
+    map.board.move(gladiator, Coordinate(5, 5))
 
-    map ! MoveRightMessage(map.gladiatorActor1)
+    map ! MoveMessage(gladiator, Right)
+    val future = map ? GetCoordinate(gladiator)
 
-    map.board.find(map.gladiatorActor1) should be (Coordinate(3, 3))
+    future.waitOnResult[Coordinate]() should be(Coordinate(6, 5))
     assertMapChangeEvent(2, map)
   }
 
-  private def createMap() : TestActorRef[Nothing] = TestActorRef(MapActor.props(worldProbe.ref, createGladiator(), createGladiator()))
 
-  private def createGladiator(): TestActorRef[Nothing] = TestActorRef(GladiatorActor.props(Gladiator("John")))
+  private def createMap(gladiators: List[TestActorRef[Nothing]]): TestActorRef[Nothing] = {
+    TestActorRef(MapActor.props(gladiators), parent.ref, "MapActor")
+  }
+
+  private def createGladiators: List[TestActorRef[Nothing]] = {
+    List(TestActorRef(GladiatorActor.props(Gladiator("John"))), TestActorRef(GladiatorActor.props(Gladiator("Mary"))))
+  }
 
   private def assertMapChangeEvent[T <: Actor](num: Int, map: TestActorRef[T]): Unit = {
-    val messages = worldProbe.receiveN(num, 5.seconds)
-    messages.forall(x => x.asInstanceOf[MapChangedMessage].board == map.underlyingActor.asInstanceOf[MapActor].board) should be (true)
+    val messages = parent.receiveN(num, 5.seconds)
+    messages.forall(x => x.asInstanceOf[MapChangedMessage].board == map.underlyingActor.asInstanceOf[MapActor].board) should be(true)
   }
 
 }

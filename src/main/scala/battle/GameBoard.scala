@@ -6,23 +6,19 @@ class GameBoard(val width: Int, val height: Int) {
 
   private val grid = Array.ofDim[AnyRef](width, height)
 
-  def put(x: Int, y: Int, obj: AnyRef): Unit = {
-    grid(x)(y) = obj
+  def put(obj: AnyRef, coordinate: Coordinate): Unit = {
+    grid(coordinate.x)(coordinate.y) = obj
   }
 
-  def get(x: Int, y: Int): Option[AnyRef] = {
-    if (grid(x)(y) == null) None
-    else Some(grid(x)(y))
+  def get(coordinate: Coordinate): Option[AnyRef] = {
+    if (grid(coordinate.x)(coordinate.y) == null) None
+    else Some(grid(coordinate.x)(coordinate.y))
   }
 
-  def move(obj: AnyRef, coordinate: Coordinate): Unit = {
-    move(obj, coordinate.x, coordinate.y)
-  }
-
-  def move(obj: AnyRef, x: Int, y: Int): Unit = {
+  def move(obj: AnyRef, newCoordinate: Coordinate): Unit = {
     val coordinate = find(obj)
     grid(coordinate.x)(coordinate.y) = null
-    grid(x)(y) = obj
+    grid(newCoordinate.x)(newCoordinate.y) = obj
   }
 
   def find(obj: AnyRef) : Coordinate = {

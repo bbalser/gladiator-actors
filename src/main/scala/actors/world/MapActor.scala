@@ -5,50 +5,51 @@ import akka.actor.{Actor, ActorRef, Props}
 import battle.GameBoard
 import battle.GameBoard.Coordinate
 
-class MapActor(worldActor : ActorRef, val gladiatorActor1: ActorRef, val gladiatorActor2: ActorRef) extends Actor {
+import scala.util.Random
+
+class MapActor(val entities: Iterable[AnyRef]) extends Actor {
 
   val board = GameBoard(10,10)
-  board.put(2, 3, gladiatorActor1)
-  board.put(8, 7, gladiatorActor2)
-  worldActor ! MapChangedMessage(board)
+  addEntitiesToBoard
+  context.parent ! MapChangedMessage(board)
 
   override def receive: Receive = {
-    case get : GetGladiatorCoordinates => sender ! board.find(get.gladiatorActor)
-    case up : MoveUpMessage => handleMove(up.gladiator, Up)
-    case down: MoveDownMessage => handleMove(down.gladiator, Down)
-    case left: MoveLeftMessage => handleMove(left.gladiator, Left)
-    case right: MoveRightMessage => handleMove(right.gladiator, Right)
+    case get : GetCoordinate => sender ! board.find(get.entity)
+    case move : MoveMessage => handleMove(move.entity, move.direction)
   }
 
-  private def handleAddGladiator(add : AddGladiatorMessage) = {
-    board.get(2,3) match {
-      case Some(_) => board.put(8, 7, add.gladiatorActor)
-      case None => board.put(2, 3, add.gladiatorActor)
+  private def handleMove(entity: AnyRef, direction: Direction): Unit = {
+    val coordinate = board.find(entity)
+    board.move(entity, direction.move(coordinate))
+    context.parent ! MapChangedMessage(board)
+  }
+
+  private def randomCoordinate = Coordinate(Random.nextInt(board.width), Random.nextInt(board.height))
+
+  private def addEntitiesToBoard = {
+    entities.foreach { ref =>
+      var coordinate = randomCoordinate
+      var placed = false
+
+      while (!placed) {
+        board.get(coordinate) match {
+          case None => board.put(ref, coordinate); placed = true
+          case Some(exists) => coordinate = randomCoordinate
+        }
+      }
     }
-    worldActor ! MapChangedMessage(board)
-  }
-
-  private def handleMove(gladiator: ActorRef, direction: Direction): Unit = {
-    val coordinate = board.find(gladiator)
-    board.move(gladiator, direction.move(coordinate))
-    worldActor ! MapChangedMessage(board)
   }
 
 }
 
 object MapActor {
 
-  def props(worldActor : ActorRef, gladiatorRef1: ActorRef, gladiatorRef2: ActorRef) = Props(classOf[MapActor], worldActor, gladiatorRef1, gladiatorRef2)
+  def props(entities: Iterable[AnyRef]) = Props(classOf[MapActor], entities)
 
-  case class AddGladiatorMessage(gladiatorActor : ActorRef)
-  case class MoveGladiatorMessage(gladiatorActor : ActorRef, x : Int, y : Int)
-  case class GetGladiatorCoordinates(gladiatorActor : ActorRef)
+  case class MoveMessage(entity : AnyRef, direction: Direction)
+  case class GetCoordinate(entity : AnyRef)
   case class MapChangedMessage(board: GameBoard)
 
-  case class MoveUpMessage(gladiator: ActorRef)
-  case class MoveDownMessage(gladiator: ActorRef)
-  case class MoveLeftMessage(gladiator: ActorRef)
-  case class MoveRightMessage(gladiator: ActorRef)
 
   sealed abstract class Direction {
     def move(coord: Coordinate): Coordinate
