@@ -113,6 +113,15 @@ class MapActorSpec(_system: ActorSystem)
     assertMapChangeEvent(2, map)
   }
 
+  it should "return any objects at requested coordinate" in {
+    val map = createMap(createGladiators)
+    val gladiator = map.entities.head
+
+    val future = map ? GetEntity(map.board.find(gladiator))
+
+    future.waitOnResult[ReturnEntity]().entity.get should be (gladiator)
+  }
+
 
   private def createMap(gladiators: List[TestActorRef[Nothing]]): TestActorRef[Nothing] = {
     TestActorRef(MapActor.props(gladiators), parent.ref, "MapActor")

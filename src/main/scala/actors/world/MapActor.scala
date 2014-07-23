@@ -16,6 +16,9 @@ class MapActor(val entities: Iterable[AnyRef]) extends Actor {
   override def receive: Receive = {
     case get : GetCoordinate => sender ! board.find(get.entity)
     case move : MoveMessage => handleMove(move.entity, move.direction)
+    case get : GetEntity => {
+      sender ! ReturnEntity(board.get(get.coordinate))
+    }
   }
 
   private def handleMove(entity: AnyRef, direction: Direction): Unit = {
@@ -49,6 +52,8 @@ object MapActor {
   case class MoveMessage(entity : AnyRef, direction: Direction)
   case class GetCoordinate(entity : AnyRef)
   case class MapChangedMessage(board: GameBoard)
+  case class GetEntity(coordinate: Coordinate)
+  case class ReturnEntity(entity: Option[AnyRef])
 
 
   sealed abstract class Direction {

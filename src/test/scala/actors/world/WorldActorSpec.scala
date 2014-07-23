@@ -1,5 +1,6 @@
 package actors.world
 
+import actors.characters.GladiatorActor.GladiatorChangedMessage
 import actors.world.MapActor.{MapChangedMessage, Up}
 import actors.world.WorldActor.{AddGladiatorMessage, MoveGladiatorMessage, StartMessage}
 import akka.actor.ActorSystem
@@ -34,15 +35,31 @@ class WorldActorSpec(_system: ActorSystem)
       promise.success(mapChangedMessage)
     }
 
-    def world = TestActorRef(WorldActor.props(captureEvent))
+    def world = TestActorRef(WorldActor.props(captureEvent, null))
     val event = MapChangedMessage(null)
     world ! event
 
     promise.future.waitOnResult[MapChangedMessage]() should be (event)
   }
+  
+  it should "pass GladiatorChangedMessage to gladiatorChangedFunction" in {
+    val promise = Promise[GladiatorChangedMessage]
+    
+    def captureEvent(gladiatorChanged: GladiatorChangedMessage): Unit = {
+      promise.success(gladiatorChanged)
+    }
+    
+    def world = TestActorRef(WorldActor.props(null, captureEvent))
+    val event = GladiatorChangedMessage(null)
+    world ! event
+    
+    promise.future.waitOnResult[GladiatorChangedMessage]() should be (event)
+    
+    
+  }
 
   it should "create Actor representing Gladiator on AddGladiatorMessage" in {
-    val world = TestActorRef(WorldActor.props(changeEvent))
+    val world = TestActorRef(WorldActor.props(mapEvent, gladiatorEvent))
     val gladiator = Gladiator("John")
 
     world ! AddGladiatorMessage(gladiator)
@@ -52,7 +69,7 @@ class WorldActorSpec(_system: ActorSystem)
 
   it should "start should create the map actor with gladiators on board" in {
 
-    val world = TestActorRef(WorldActor.props(changeEvent))
+    val world = TestActorRef(WorldActor.props(mapEvent, gladiatorEvent))
     val gladiator1 = Gladiator("John")
     val gladiator2 = Gladiator("Mary")
 
@@ -71,7 +88,7 @@ class WorldActorSpec(_system: ActorSystem)
       if (!promise.isCompleted) promise.success(event)
     }
 
-    val world = TestActorRef(WorldActor.props(captureBoard))
+    val world = TestActorRef(WorldActor.props(captureBoard, gladiatorEvent))
     val gladiator = Gladiator("John")
 
     world ! AddGladiatorMessage(gladiator)
@@ -86,6 +103,8 @@ class WorldActorSpec(_system: ActorSystem)
   }
 
 
-  def changeEvent(event: MapChangedMessage): Unit = Unit
+  def mapEvent(event: MapChangedMessage): Unit = Unit
+  def gladiatorEvent(event: GladiatorChangedMessage): Unit = Unit
+  
 
 }

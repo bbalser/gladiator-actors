@@ -1,5 +1,6 @@
 package battle
 
+import actors.characters.GladiatorActor.GladiatorChangedMessage
 import actors.world.MapActor._
 import actors.world.WorldActor
 import actors.world.WorldActor.{AddGladiatorMessage, MoveGladiatorMessage, StartMessage}
@@ -15,6 +16,14 @@ object Application extends App {
 
   def mapChanged(event: MapChangedMessage): Unit = {
     drawBoard(event.board)
+  }
+
+  def gladiatorChanged(event: GladiatorChangedMessage): Unit = {
+    showGladiator(event.gladiator)
+  }
+
+  def showGladiator(gladiator: Gladiator): Unit = {
+    println(s"Name: ${gladiator.name} --> HitPoints: ${gladiator.hitpoints}")
   }
 
   def drawBoard(board: GameBoard) : Unit = {
@@ -51,7 +60,7 @@ object Application extends App {
   implicit val timeout = Timeout(5.seconds)
 
   val system = ActorSystem("mySystem")
-  val world = system.actorOf(WorldActor.props(mapChanged))
+  val world = system.actorOf(WorldActor.props(mapChanged, gladiatorChanged))
 
   val gladiators = Map("John" -> Gladiator("John"), "Mary" -> Gladiator("Mary"))
   world ! AddGladiatorMessage(gladiators("John"))
