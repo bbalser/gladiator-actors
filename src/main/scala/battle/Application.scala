@@ -7,6 +7,7 @@ import actors.world.WorldActor.{AddGladiatorMessage, MoveGladiatorMessage, Start
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import battle.GameBoard.Coordinate
+import messages.attacks.AttackMessage
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -57,6 +58,14 @@ object Application extends App {
     }
   }
 
+  def attack(name: String, target: Coordinate) = {
+    if (gladiators.contains(name)) {
+      world ! AttackMessage(gladiators(name), target, 10)
+    } else {
+      println(s"Unknown Character : ${name}")
+    }
+  }
+
   implicit val timeout = Timeout(5.seconds)
 
   val system = ActorSystem("mySystem")
@@ -65,7 +74,7 @@ object Application extends App {
   val gladiators = Map("John" -> Gladiator("John"), "Mary" -> Gladiator("Mary"))
   world ! AddGladiatorMessage(gladiators("John"))
   world ! AddGladiatorMessage(gladiators("Mary"))
-  world ! new StartMessage
+  world ! StartMessage
 
   var exit = false
 
@@ -85,7 +94,7 @@ object Application extends App {
       case DownRegex(name) => move(name, Down)
       case LeftRegex(name) => move(name, Left)
       case RightRegex(name) => move(name, Right)
-      case AttackRegex(name, x, y) => println(s"${name} attacks ${x},${y}")
+      case AttackRegex(name, x, y) => attack(name, Coordinate(x.toInt, y.toInt))
       case "exit" => exit = true
       case x => println(s"Unknown Command : ${x}")
     }
