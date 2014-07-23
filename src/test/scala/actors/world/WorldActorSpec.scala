@@ -1,17 +1,17 @@
 package actors.world
 
-import actors.world.MapActor.{Up, MoveMessage, GetCoordinate, MapChangedMessage}
-import actors.world.WorldActor.{MoveGladiatorMessage, StartMessage, AddGladiatorMessage}
+import actors.world.MapActor.{MapChangedMessage, Up}
+import actors.world.WorldActor.{AddGladiatorMessage, MoveGladiatorMessage, StartMessage}
 import akka.actor.ActorSystem
-import akka.testkit.{TestActorRef, TestKit, ImplicitSender}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import battle.GameBoard.Coordinate
 import battle.Gladiator
-import org.scalatest.{Matchers, FlatSpecLike, BeforeAndAfterAll}
+import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
+import util.FutureHelper._
+
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import util.FutureHelper._
-import akka.pattern.ask
 import scala.language.implicitConversions
 
 class WorldActorSpec(_system: ActorSystem)

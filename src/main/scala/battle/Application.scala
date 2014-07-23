@@ -1,14 +1,11 @@
 package battle
 
-import actors.characters.GladiatorActor
-import actors.world.WorldActor.{MoveGladiatorMessage, StartMessage, AddGladiatorMessage}
-import actors.world.{WorldActor, MapActor}
 import actors.world.MapActor._
+import actors.world.WorldActor
+import actors.world.WorldActor.{AddGladiatorMessage, MoveGladiatorMessage, StartMessage}
 import akka.actor.ActorSystem
-import akka.pattern.ask
 import akka.util.Timeout
 import battle.GameBoard.Coordinate
-import util.FutureHelper._
 
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -67,6 +64,7 @@ object Application extends App {
   val DownRegex = "down (\\w+)".r
   val LeftRegex = "left (\\w+)".r
   val RightRegex = "right (\\w+)".r
+  val AttackRegex = "(\\w+) attacks (\\d),(\\d)".r
 
   Thread.sleep(500)
 
@@ -78,6 +76,7 @@ object Application extends App {
       case DownRegex(name) => move(name, Down)
       case LeftRegex(name) => move(name, Left)
       case RightRegex(name) => move(name, Right)
+      case AttackRegex(name, x, y) => println(s"${name} attacks ${x},${y}")
       case "exit" => exit = true
       case x => println(s"Unknown Command : ${x}")
     }

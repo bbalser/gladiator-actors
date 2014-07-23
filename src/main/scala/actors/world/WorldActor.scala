@@ -12,14 +12,16 @@ class WorldActor(mapChanged: MapChangedMessage => Unit) extends Actor {
   var map: ActorRef = null
 
   override def receive: Receive = {
-    case add : AddGladiatorMessage => {
-      val ref = context.actorOf(GladiatorActor.props(add.gladiator))
-      gladiators = gladiators + (add.gladiator -> ref)
-    }
+    case add : AddGladiatorMessage => addGladiator(add.gladiator)
     case move: MoveGladiatorMessage => map ! MoveMessage(move.gladiator, move.direction)
     case start : StartMessage => map = context.actorOf(MapActor.props(gladiators.keys))
     case mapEvent : MapChangedMessage => mapChanged(mapEvent)
 
+  }
+
+  def addGladiator(gladiator: Gladiator) {
+    val ref = context.actorOf(GladiatorActor.props(gladiator))
+    gladiators = gladiators + (gladiator -> ref)
   }
 }
 

@@ -1,7 +1,7 @@
 package actors.characters
 
-import akka.actor.{Props, Actor}
-import akka.actor.Actor.Receive
+import actors.characters.GladiatorActor.GladiatorChangedMessage
+import akka.actor.{Actor, Props}
 import battle.Gladiator
 import messages.attacks.AttackMessage
 
@@ -15,6 +15,7 @@ class GladiatorActor(val gladiator : Gladiator) extends Actor {
     if (attack.successful(gladiator)) {
       val damage = attack.damage(gladiator)
       gladiator.applyDamage(damage)
+      context.parent ! GladiatorChangedMessage(gladiator)
     }
   }
 
@@ -22,4 +23,7 @@ class GladiatorActor(val gladiator : Gladiator) extends Actor {
 
 object GladiatorActor {
   def props(gladiator : Gladiator) = Props(classOf[GladiatorActor], gladiator)
+
+  case class GladiatorChangedMessage(gladiator: Gladiator)
+
 }
