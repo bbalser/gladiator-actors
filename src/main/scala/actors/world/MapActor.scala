@@ -27,19 +27,14 @@ class MapActor(val entities: Iterable[AnyRef]) extends Actor {
     context.parent ! MapChangedMessage(board)
   }
 
-  private def randomCoordinate = Coordinate(Random.nextInt(board.width), Random.nextInt(board.height))
-
   private def addEntitiesToBoard = {
-    entities.foreach { ref =>
-      var coordinate = randomCoordinate
-      var placed = false
+    def randomCoordinate = Coordinate(Random.nextInt(board.width), Random.nextInt(board.height))
+    def randomGenerator: Stream[Coordinate] = Stream.cons(randomCoordinate,randomGenerator)
+    val randomList = randomGenerator
 
-      while (!placed) {
-        board.get(coordinate) match {
-          case None => board.put(ref, coordinate); placed = true
-          case Some(exists) => coordinate = randomCoordinate
-        }
-      }
+    entities.foreach { ref =>
+      val coordinate = randomList.find(c => board.get(c).isEmpty ).get
+      board.put(ref, coordinate)
     }
   }
 
