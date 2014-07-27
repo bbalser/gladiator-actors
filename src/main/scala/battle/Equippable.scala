@@ -24,6 +24,7 @@ trait Equippable {
 
   def attack: AdjustmentApi = new AdjustmentApi(Attack)
   def defend: AdjustmentApi = new AdjustmentApi(Defense)
+  def damage: AdjustmentApi = new AdjustmentApi(Damage)
   def dexterity: AdjustmentApi = new AdjustmentApi(Dexterity)
   def strength: AdjustmentApi = new AdjustmentApi(Strength)
   def constitution: AdjustmentApi = new AdjustmentApi(Constitution)
@@ -45,6 +46,7 @@ object Equippable {
   sealed trait AdjustmentType
   object Attack extends AdjustmentType
   object Defense extends AdjustmentType
+  object Damage extends AdjustmentType
   object Dexterity extends AdjustmentType
   object Strength extends AdjustmentType
   object Constitution extends AdjustmentType
