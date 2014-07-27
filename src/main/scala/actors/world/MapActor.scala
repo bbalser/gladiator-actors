@@ -28,9 +28,7 @@ class MapActor(val entities: Iterable[AnyRef]) extends Actor {
   }
 
   private def addEntitiesToBoard = {
-    def randomCoordinate = Coordinate(Random.nextInt(board.width), Random.nextInt(board.height))
-    def randomGenerator: Stream[Coordinate] = Stream.cons(randomCoordinate,randomGenerator)
-    val randomList = randomGenerator
+    val randomList = Stream.continually { Coordinate(Random.nextInt(board.width), Random.nextInt(board.height)) }
 
     entities.foreach { ref =>
       val coordinate = randomList.find(c => board.get(c).isEmpty ).get
