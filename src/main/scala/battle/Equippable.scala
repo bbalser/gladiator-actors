@@ -1,6 +1,6 @@
 package battle
 
-import battle.Equippable.{Defense, Attack, AdjustmentType}
+import battle.Equippable._
 
 import scala.util.DynamicVariable
 
@@ -24,7 +24,9 @@ trait Equippable {
 
   def attack: AdjustmentApi = new AdjustmentApi(Attack)
   def defend: AdjustmentApi = new AdjustmentApi(Defense)
-
+  def dexterity: AdjustmentApi = new AdjustmentApi(Dexterity)
+  def strength: AdjustmentApi = new AdjustmentApi(Strength)
+  def constitution: AdjustmentApi = new AdjustmentApi(Constitution)
 
   def adjustment(adjustmentType: AdjustmentType, attacker: Gladiator, defender: Gladiator): Integer = {
     dynamicAttacker.withValue(attacker) {
@@ -43,6 +45,9 @@ object Equippable {
   sealed trait AdjustmentType
   object Attack extends AdjustmentType
   object Defense extends AdjustmentType
+  object Dexterity extends AdjustmentType
+  object Strength extends AdjustmentType
+  object Constitution extends AdjustmentType
 
 }
 
