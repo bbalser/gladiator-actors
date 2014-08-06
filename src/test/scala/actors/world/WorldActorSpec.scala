@@ -1,21 +1,18 @@
 package actors.world
 
 import actors.characters.GladiatorActor.GladiatorChangedMessage
-import actors.world.MapActor.{GetCoordinate, MapChangedMessage, Up}
-import actors.world.WorldActor.{AddGladiatorMessage, MoveGladiatorMessage, StartMessage}
+import actors.world.MapActor.{MapChangedMessage, Up}
+import actors.world.WorldActor.{AddGladiatorMessage, AddListener, MoveGladiatorMessage, StartMessage}
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import battle.GameBoard.Coordinate
-import battle.{GameBoard, Gladiator}
+import battle.Gladiator
 import messages.attacks.AttackMessage
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
-import util.FutureHelper._
 
-import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.language.implicitConversions
-import akka.pattern.ask
 
 class WorldActorSpec(_system: ActorSystem)
   extends TestKit(_system)
@@ -29,39 +26,38 @@ class WorldActorSpec(_system: ActorSystem)
   implicit val timeout = new Timeout(5.seconds)
   implicit def convertActorRefToWorldActor(ref : TestActorRef[Nothing]) = ref.underlyingActor.asInstanceOf[WorldActor]
 
-  "A World Actor" should "Pass MapChangeMessage to mapChangedFunction" in {
+  override def afterAll(): Unit = {
+    system.shutdown()
+    system.awaitTermination(10.seconds)
+  }
 
-    val promise = Promise[MapChangedMessage]
+  "A World Actor" should "pass MapChangedMessage to all listeners" in {
 
-    def captureEvent(mapChangedMessage : MapChangedMessage): Unit = {
-      promise.success(mapChangedMessage)
-    }
+    val probe = new TestProbe(system)
+    val world = TestActorRef(WorldActor.props())
 
-    def world = TestActorRef(WorldActor.props(captureEvent, null))
+    world ! AddListener(probe.ref)
+
     val event = MapChangedMessage(null)
     world ! event
 
-    promise.future.waitOnResult[MapChangedMessage]() should be (event)
+    probe.expectMsg(event)
   }
-  
-  it should "pass GladiatorChangedMessage to gladiatorChangedFunction" in {
-    val promise = Promise[GladiatorChangedMessage]
-    
-    def captureEvent(gladiatorChanged: GladiatorChangedMessage): Unit = {
-      promise.success(gladiatorChanged)
-    }
-    
-    def world = TestActorRef(WorldActor.props(null, captureEvent))
+
+  it should "pass GladiatorChangedMessage to all listeners" in {
+    val probe = new TestProbe(system)
+    val world = TestActorRef(WorldActor.props())
+
+    world ! AddListener(probe.ref)
+
     val event = GladiatorChangedMessage(null)
     world ! event
-    
-    promise.future.waitOnResult[GladiatorChangedMessage]() should be (event)
-    
-    
+
+    probe.expectMsg(event)
   }
 
   it should "create Actor representing Gladiator on AddGladiatorMessage" in {
-    val world = TestActorRef(WorldActor.props(mapEvent, gladiatorEvent))
+    val world = TestActorRef(WorldActor.props())
     val gladiator = Gladiator("John")
 
     world ! AddGladiatorMessage(gladiator)
@@ -71,7 +67,7 @@ class WorldActorSpec(_system: ActorSystem)
 
   it should "start should create the map actor with gladiators on board" in {
 
-    val world = TestActorRef(WorldActor.props(mapEvent, gladiatorEvent))
+    val world = TestActorRef(WorldActor.props())
     val gladiator1 = Gladiator("John")
     val gladiator2 = Gladiator("Mary")
 
@@ -85,18 +81,17 @@ class WorldActorSpec(_system: ActorSystem)
 
   it should "Send Gladiator Move event to MapActor" in {
 
-    val promise = Promise[MapChangedMessage]
-    def captureBoard(event : MapChangedMessage): Unit = {
-      if (!promise.isCompleted) promise.success(event)
-    }
+    val probe = new TestProbe(system)
 
-    val world = TestActorRef(WorldActor.props(captureBoard, gladiatorEvent))
+    val world = TestActorRef(WorldActor.props())
+    world ! AddListener(probe.ref)
     val gladiator = Gladiator("John")
 
     world ! AddGladiatorMessage(gladiator)
     world ! StartMessage
 
-    val board = promise.future.waitOnResult[MapChangedMessage]().board
+    val board = probe.receiveOne(5.seconds).asInstanceOf[MapChangedMessage].board
+
     board.move(gladiator, Coordinate(5,5))
 
     world ! MoveGladiatorMessage(gladiator, Up)
@@ -105,17 +100,11 @@ class WorldActorSpec(_system: ActorSystem)
   }
 
   it should "when attack message is received it will consult map actor and forward message to any actor at that position" in {
-    val gladiatorPromise = Promise[Gladiator]
-    def captureGladiator(event: GladiatorChangedMessage): Unit = {
-      gladiatorPromise.success(event.gladiator)
-    }
 
-    val boardPromise = Promise[GameBoard]
-    def captureBoard(event: MapChangedMessage): Unit = {
-      boardPromise.success(event.board)
-    }
+    val probe = new TestProbe(system)
 
-    val world = TestActorRef(WorldActor.props(captureBoard, captureGladiator))
+    val world = TestActorRef(WorldActor.props())
+    world ! AddListener(probe.ref)
     val gladiator1 = Gladiator("John")
     val gladiator2 = Gladiator("Mary")
 
@@ -123,17 +112,15 @@ class WorldActorSpec(_system: ActorSystem)
     world ! AddGladiatorMessage(gladiator2)
     world ! StartMessage
 
-    val targetCoordinate = boardPromise.future.waitOnResult[GameBoard]().find(gladiator2)
+    val board = probe.receiveOne(5.seconds).asInstanceOf[MapChangedMessage].board
+    val targetCoordinate = board.find(gladiator2)
 
     val attack = AttackMessage(gladiator1, targetCoordinate, 10)
 
     world ! attack
 
-    gladiatorPromise.future.waitOnResult[Gladiator]().hitpoints should be (4)
+    val gladiator = probe.receiveOne(5.seconds).asInstanceOf[GladiatorChangedMessage].gladiator
+    gladiator.hitpoints should be (4)
   }
-
-  def mapEvent(event: MapChangedMessage): Unit = Unit
-  def gladiatorEvent(event: GladiatorChangedMessage): Unit = Unit
-  
 
 }
