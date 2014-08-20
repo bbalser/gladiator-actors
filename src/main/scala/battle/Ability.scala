@@ -14,4 +14,15 @@ case class Ability(score: Int = Ability.DEFAULT_SCORE) {
 
 object Ability {
   val DEFAULT_SCORE = 10
+
+  sealed class AbilityType
+  case object Strength extends AbilityType
+  case object Dexterity extends AbilityType
+  case object Constitution extends AbilityType
+  case object Intelligence extends AbilityType
+  case object Wisdom extends AbilityType
+  case object Charisma extends AbilityType
+
+  def types: List[AbilityType] = List(Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma)
+
 }

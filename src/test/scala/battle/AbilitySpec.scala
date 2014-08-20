@@ -1,5 +1,6 @@
 package battle
 
+import battle.Ability._
 import org.scalatest.{Matchers, FlatSpecLike}
 
 class AbilitySpec extends Matchers with FlatSpecLike {
@@ -46,6 +47,10 @@ class AbilitySpec extends Matchers with FlatSpecLike {
   it should "be subtractable" in {
     val ability = Ability(10) - 3
     ability.score should be (7)
+  }
+
+  it should "have all ability types defined" in {
+    Ability.types should be (List(Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma))
   }
 
 }

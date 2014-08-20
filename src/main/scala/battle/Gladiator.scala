@@ -1,6 +1,8 @@
 package battle
 
-class Gladiator(val name: String) {
+import battle.Ability.AbilityType
+
+class Gladiator(val name: String, abilities: Map[AbilityType, Ability]) {
 
   private var _hitpoints = 5
   val armorClass = 10
@@ -17,8 +19,10 @@ class Gladiator(val name: String) {
     hitpoints > 0
   }
 
+  def ability(abilityType: AbilityType): Ability = abilities.getOrElse(abilityType, Ability())
+
 }
 
 object Gladiator {
-  def apply(name: String) = new Gladiator(name)
+  def apply(name: String, abilities: Map[AbilityType, Ability] = Map()) = new Gladiator(name, abilities)
 }
