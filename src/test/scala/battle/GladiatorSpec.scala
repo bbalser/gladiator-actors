@@ -1,6 +1,6 @@
 package battle
 
-import battle.Ability.Strength
+import battle.Ability.{Constitution, Strength}
 import battle.classes.Fighter
 import org.scalatest.{FlatSpecLike, Matchers}
 
@@ -14,6 +14,11 @@ class GladiatorSpec extends Matchers with FlatSpecLike {
   it should "have default hitPoits of 5" in {
     val gladiator = Gladiator(null)
     gladiator.hitpoints should be (5)
+  }
+
+  it should "add constituion modifier to hitpoints" in {
+    val gladiator = Gladiator(name = "John", abilities = Map(Constitution -> Ability(12)))
+    gladiator.hitpoints should be (6)
   }
 
   it should "lower hitpoints by damage" in {
