@@ -38,4 +38,14 @@ class AbilitySpec extends Matchers with FlatSpecLike {
     ability.score should be (10)
   }
 
+  it should "be addable" in {
+    val ability = Ability(5) + 10
+    ability.score should be (15)
+  }
+
+  it should "be subtractable" in {
+    val ability = Ability(10) - 3
+    ability.score should be (7)
+  }
+
 }
