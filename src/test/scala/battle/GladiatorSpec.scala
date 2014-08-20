@@ -1,6 +1,7 @@
 package battle
 
 import battle.Ability.Strength
+import battle.classes.Fighter
 import org.scalatest.{FlatSpecLike, Matchers}
 
 class GladiatorSpec extends Matchers with FlatSpecLike {
@@ -53,6 +54,11 @@ class GladiatorSpec extends Matchers with FlatSpecLike {
   it should "have a default strength ability of 10" in {
     val gladiator = Gladiator("Joel")
     gladiator.ability(Strength) should be (Ability())
+  }
+
+  it should "have a GladitorClass" in {
+    val gladiator = Gladiator(name = "John", gladiatorClass = Fighter)
+    gladiator.gladiatorClass should be (Fighter)
   }
 
 }
