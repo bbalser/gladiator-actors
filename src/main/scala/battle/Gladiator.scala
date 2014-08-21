@@ -11,17 +11,11 @@ class Gladiator(val name: String,
 
   def armorClass = 10 + ability(Dexterity).modifier
 
-  def applyDamage(damage: Int): Unit = {
-    _hitpoints -= damage
-  }
+  def applyDamage(damage: Int): Unit = _hitpoints -= damage
 
-  def hitpoints = {
-    _hitpoints
-  }
+  def hitpoints = _hitpoints
 
-  def alive = {
-    hitpoints > 0
-  }
+  def alive = hitpoints > 0
 
   def ability(abilityType: AbilityType): Ability = abilities.getOrElse(abilityType, Ability())
 

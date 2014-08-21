@@ -1,16 +1,16 @@
 package messages.attacks
 
-import battle.Ability.{Dexterity, Strength}
+import battle.Ability.Strength
 import battle.GameBoard.Coordinate
 import battle.Gladiator
 
-class AttackMessage(attacker : Gladiator, val coordinate: Coordinate, roll : Int) {
+class AttackMessage(attacker: Gladiator, val coordinate: Coordinate, roll: Int) {
 
-  def successful(defender : Gladiator) : Boolean = {
+  def successful(defender: Gladiator): Boolean = {
     attackRoll >= defender.armorClass
   }
 
-  def damage(defender : Gladiator) : Int = {
+  def damage(defender: Gladiator): Int = {
     val multiplier = if (isCriticalHit) 2 else 1
     (baseDamage * multiplier).max(1)
   }
@@ -26,5 +26,5 @@ class AttackMessage(attacker : Gladiator, val coordinate: Coordinate, roll : Int
 }
 
 object AttackMessage {
-  def apply(attacker : Gladiator, coordinate: Coordinate, roll : Int) = new AttackMessage(attacker, coordinate, roll)
+  def apply(attacker: Gladiator, coordinate: Coordinate, roll: Int) = new AttackMessage(attacker, coordinate, roll)
 }
