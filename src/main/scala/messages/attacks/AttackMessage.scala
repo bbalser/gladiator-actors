@@ -7,7 +7,7 @@ import battle.Gladiator
 class AttackMessage(attacker: Gladiator, val coordinate: Coordinate, roll: Int) {
 
   def successful(defender: Gladiator): Boolean = {
-    attackRoll >= defender.armorClass
+    attackRoll(defender) >= defender.armorClass
   }
 
   def damage(defender: Gladiator): Int = {
@@ -19,7 +19,7 @@ class AttackMessage(attacker: Gladiator, val coordinate: Coordinate, roll: Int) 
     1 + attacker.ability(Strength).modifier
   }
 
-  private def attackRoll = roll + attacker.ability(Strength).modifier
+  private def attackRoll(defender: Gladiator) = roll + attacker.attackBonus(defender)
 
   private def isCriticalHit = roll == 20
 

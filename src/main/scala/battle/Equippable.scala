@@ -30,7 +30,7 @@ trait Equippable {
   def strength: AdjustmentApi = new AdjustmentApi(Strength)
   def constitution: AdjustmentApi = new AdjustmentApi(Constitution)
 
-  def adjustment(adjustmentType: AdjustmentType, attacker: Gladiator, defender: Gladiator): Integer = {
+  def adjustment(adjustmentType: AdjustmentType, attacker: Gladiator, defender: Gladiator): Int = {
     dynamicAttacker.withValue(attacker) {
       dynamicDefender.withValue(defender) {
         adjustments.filter(_.adjustmentType == adjustmentType).map(_.value).sum

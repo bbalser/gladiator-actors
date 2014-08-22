@@ -1,7 +1,8 @@
 package battle
 
 import battle.Ability.{Constitution, Strength}
-import battle.classes.Fighter
+import battle.classes.{GladiatorClass, Fighter}
+import battle.races.Race
 import org.scalatest.{FlatSpecLike, Matchers}
 
 class GladiatorSpec extends Matchers with FlatSpecLike {
@@ -66,4 +67,31 @@ class GladiatorSpec extends Matchers with FlatSpecLike {
     gladiator.gladiatorClass should be (Fighter)
   }
 
+  it should "have an attack bonus that adds strength modifier" in {
+    val gladiator = Gladiator(name = "attacker", abilities = Map(Strength -> Ability(12)))
+    gladiator.attackBonus(Gladiator("defender")) should be (1)
+  }
+
+  "The Attack roll" should "include gladiator class" in {
+    object FakeClass extends GladiatorClass {
+      attack + 2
+    }
+
+    val gladiator = Gladiator(name = "George", gladiatorClass = FakeClass, abilities = Map(Strength -> Ability(12)))
+    gladiator.attackBonus(Gladiator("defender")) should be (3)
+  }
+
+  it should "include race" in {
+    object FakeRace extends Race {
+      attack + 2
+    }
+
+    val gladiator = Gladiator(name = "attacker", race = FakeRace)
+    gladiator.attackBonus(Gladiator("defender")) should be (2)
+  }
+
+
+
 }
+
+
